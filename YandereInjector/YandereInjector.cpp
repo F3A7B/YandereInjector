@@ -6,7 +6,7 @@
 
 using namespace std;
 
-DWORD GetProcessID(const char* Process, DWORD& ProcessID) {
+void GetProcessID(const char* Process, DWORD& ProcessID) {
 	HANDLE ProcessSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
 	PROCESSENTRY32 ProcessEntry;
 	ProcessEntry.dwSize = sizeof(PROCESSENTRY32);
@@ -31,6 +31,7 @@ int main() {
 	DWORD TargetPID;
 	char InjectorPath[MAX_PATH];
 	char DllPath[MAX_PATH];
+	char OriginalBytes[5];
 
 	SetConsoleTitleA("YandereInjector by Nexo");
 
@@ -46,7 +47,12 @@ int main() {
 	
 	GetProcessID(TargetName.c_str(), TargetPID);
 
-	HANDLE TargetHandle		= OpenProcess(PROCESS_ALL_ACCESS, FALSE, TargetPID);
+	HANDLE TargetHandle = OpenProcess(PROCESS_ALL_ACCESS, FALSE, TargetPID);
+	LPVOID OpenFile = GetProcAddress(LoadLibraryW(L"ntdll"), "NtOpenFile");
+
+	memcpy(OriginalBytes, OpenFile, 5);
+	WriteProcessMemory(TargetHandle, OpenFile, OriginalBytes, 5, 0);
+
 	LPVOID LoadLib			= (LPVOID)GetProcAddress(GetModuleHandleA("kernel32.dll"), "LoadLibraryA");
 	LPVOID Memory			= (LPVOID)VirtualAllocEx(TargetHandle, 0, strlen(DllPath), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
 
